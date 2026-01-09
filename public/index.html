@@ -28,18 +28,12 @@
               <div class="field-group">
                 <label class="label">Profile source</label>
                 <div class="choices">
-                  <label><input type="radio" name="source" value="text" checked /> Paste text</label>
-                  <label><input type="radio" name="source" value="pdf" /> PDF</label>
+                  <label><input type="radio" name="source" value="pdf" checked /> PDF</label>
                   <label><input type="radio" name="source" value="html" /> HTML</label>
                 </div>
               </div>
 
-              <div class="field-group source-section" data-source="text">
-                <label class="label" for="profileText">Profile text</label>
-                <textarea id="profileText" name="profileText" rows="8" placeholder="Paste LinkedIn profile text here..."></textarea>
-              </div>
-
-              <div class="field-group source-section hidden" data-source="pdf">
+              <div class="field-group source-section" data-source="pdf">
                 <label class="label" for="profilePdf">Profile PDF</label>
                 <input id="profilePdf" name="profilePdf" type="file" accept="application/pdf" />
               </div>
@@ -66,6 +60,7 @@
                 <div class="field-group">
                   <label class="label" for="ollamaHost">Ollama host</label>
                   <input id="ollamaHost" name="host" type="text" value="http://localhost:11434" />
+                  <small class="help-text">Note: Ollama must be installed and running. If not available, use OpenAI instead.</small>
                 </div>
                 <div class="field-group">
                   <label class="label" for="model">Model</label>
@@ -85,7 +80,8 @@
                 </div>
                 <div class="field-group">
                   <label class="label" for="openaiModel">Model</label>
-                  <input id="openaiModel" name="openaiModel" type="text" value="gpt-4" />
+                  <input id="openaiModel" name="model" type="text" value="gpt-4o-mini" />
+                  <small class="help-text">Popular models: gpt-4o-mini, gpt-4o, gpt-3.5-turbo, gpt-4-turbo</small>
                 </div>
               </div>
             </div>
@@ -137,18 +133,39 @@
       });
     }
 
-    function toggleProviders() {
+    async function toggleProviders() {
       const selected = providerSelect.value;
       ollamaSection.classList.toggle('hidden', selected !== 'ollama');
       openaiSection.classList.toggle('hidden', selected !== 'openai');
-      if (selected === 'ollama') loadModels();
+      if (selected === 'ollama') {
+        await loadModels();
+      }
     }
 
     sourceRadios.forEach((r) => r.addEventListener('change', toggleSources));
     toggleSources();
 
     providerSelect.addEventListener('change', toggleProviders);
-    toggleProviders();
+    
+    // Check Ollama availability on page load and switch to OpenAI if unavailable
+    (async () => {
+      try {
+        const host = hostInput.value.trim();
+        const res = await fetch(`/api/models?host=${encodeURIComponent(host)}`);
+        const json = await res.json();
+        
+        if (json.available === false) {
+          // Ollama not available, switch to OpenAI
+          providerSelect.value = 'openai';
+          setStatus('Ollama not available - switched to OpenAI', 'warning');
+        }
+      } catch (err) {
+        // Network error, likely Ollama not available
+        providerSelect.value = 'openai';
+        setStatus('Ollama not available - switched to OpenAI', 'warning');
+      }
+      toggleProviders();
+    })();
 
     clearBtn.addEventListener('click', () => {
       resultsEl.innerHTML = '<p class="muted">Cleared. Submit again to see results.</p>';
@@ -162,23 +179,52 @@
       try {
         const res = await fetch(`/api/models?host=${encodeURIComponent(host)}`);
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error || 'Unable to load models');
+        
         modelSelect.innerHTML = '';
-          if (!json.models || json.models.length === 0) {
-            throw new Error('No models found at this host');
+        
+        if (json.available === false) {
+          // Ollama not available - use default models
+          const defaultModels = ['llama3', 'llama2', 'mistral', 'codellama'];
+          defaultModels.forEach((modelName) => {
+            const opt = document.createElement('option');
+            opt.value = modelName;
+            opt.textContent = modelName;
+            modelSelect.appendChild(opt);
+          });
+          setStatus('Ollama not available - using default model list', 'warning');
+        } else if (!json.models || json.models.length === 0) {
+          // Ollama is available but no models installed
+          const defaultModels = ['llama3', 'llama2', 'mistral', 'codellama'];
+          defaultModels.forEach((modelName) => {
+            const opt = document.createElement('option');
+            opt.value = modelName;
+            opt.textContent = modelName;
+            modelSelect.appendChild(opt);
+          });
+          setStatus('No models found - make sure models are installed in Ollama', 'warning');
+        } else {
+          json.models.forEach((m) => {
+            const opt = document.createElement('option');
+            opt.value = m.name;
+            opt.textContent = m.name;
+            modelSelect.appendChild(opt);
+          });
+          if (!modelSelect.value && modelSelect.options.length > 0) {
+            modelSelect.selectedIndex = 0;
           }
-        (json.models || []).forEach((m) => {
+          setStatus(`Loaded ${json.models.length} models from ${json.host}`);
+        }
+      } catch (err) {
+        // On network error, provide default models
+        modelSelect.innerHTML = '';
+        const defaultModels = ['llama3', 'llama2', 'mistral', 'codellama'];
+        defaultModels.forEach((modelName) => {
           const opt = document.createElement('option');
-          opt.value = m.name;
-          opt.textContent = m.name;
+          opt.value = modelName;
+          opt.textContent = modelName;
           modelSelect.appendChild(opt);
         });
-        if (!modelSelect.value && modelSelect.options.length > 0) {
-          modelSelect.selectedIndex = 0;
-        }
-        setStatus(`Loaded ${json.models?.length || 0} models from ${json.host}`);
-      } catch (err) {
-        setStatus(err.message || 'Failed to load models', 'error');
+        setStatus('Could not connect to Ollama - using defaults', 'warning');
       } finally {
         loadModelsBtn.disabled = false;
       }
@@ -271,11 +317,7 @@
         const source = document.querySelector('input[name="source"]:checked').value;
         const provider = providerSelect.value;
 
-        if (source === 'text') {
-          const text = document.getElementById('profileText').value.trim();
-          if (!text) throw new Error('Please paste profile text.');
-          formData.append('profileText', text);
-        } else if (source === 'pdf') {
+        if (source === 'pdf') {
           const file = document.getElementById('profilePdf').files[0];
           if (!file) throw new Error('Select a profile PDF.');
           formData.append('profilePdf', file);
@@ -313,6 +355,11 @@
         });
 
         if (!res.ok) {
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || `Request failed: ${res.status}`);
+          }
           throw new Error(`Request failed: ${res.status} ${res.statusText}`);
         }
 

@@ -60,6 +60,7 @@ body {
 .inline select { flex: 1; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: #0b141d; color: var(--text); }
 .inline button { width: auto; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: #122030; color: var(--text); cursor: pointer; }
 .label { display: block; font-weight: 600; margin-bottom: 6px; }
+.help-text { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
 textarea, input[type="text"], input[type="file"], button {
   width: 100%;
   padding: 10px 12px;
@@ -88,6 +89,7 @@ button[type="submit"]:disabled { opacity: 0.6; cursor: not-allowed; }
 #status { min-height: 20px; font-weight: 600; }
 #status[data-tone="error"] { color: var(--danger); }
 #status[data-tone="success"] { color: var(--success); }
+#status[data-tone="warning"] { color: #ffa94d; }
 .provider-section { display: flex; flex-direction: column; gap: 14px; }
 input[type="password"] { font-family: monospace; }
 

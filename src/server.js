@@ -40,7 +40,7 @@ app.post(
     try {
       const body = req.body || {};
       const provider = body.provider || 'ollama';
-      const model = body.model || (provider === 'openai' ? 'gpt-4' : 'llama3');
+      const model = body.model || (provider === 'openai' ? 'gpt-4o-mini' : 'llama3');
 
       let profileText = body.profileText;
       const profilePdf = req.files?.profilePdf?.[0];
@@ -102,9 +102,15 @@ app.get('/api/models', async (req, res) => {
   try {
     const host = req.query.host || DEFAULT_OLLAMA_HOST;
     const models = await fetchModels(host);
-    res.json({ host: host || DEFAULT_OLLAMA_HOST, models });
+    res.json({ host: host || DEFAULT_OLLAMA_HOST, models, available: true });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to fetch models', details: err.message });
+    // Return empty models list instead of error when Ollama is unavailable
+    res.json({ 
+      host: req.query.host || DEFAULT_OLLAMA_HOST, 
+      models: [], 
+      available: false,
+      error: err.message 
+    });
   }
 });
 
@@ -118,7 +124,7 @@ app.post(
     try {
       const body = req.body || {};
       const provider = body.provider || 'ollama';
-      const model = body.model || (provider === 'openai' ? 'gpt-4' : 'llama3');
+      const model = body.model || (provider === 'openai' ? 'gpt-4o-mini' : 'llama3');
 
       let profileText = body.profileText;
       const profilePdf = req.files?.profilePdf?.[0];
