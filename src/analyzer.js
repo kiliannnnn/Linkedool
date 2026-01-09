@@ -1,13 +1,13 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { JSDOM } from 'jsdom';
+import mod from 'pdf-parse';
 
 // Robust pdf-parse resolver across versions:
 // - v1 style: default export is a function (buffer) -> { text }
 // - v2+ style: exports PDFParse class with getText()
 let pdfParseFn;
 try {
-  const mod = require('pdf-parse');
   if (typeof mod === 'function') {
     pdfParseFn = async (buffer) => (await mod(buffer)).text || '';
   } else if (typeof mod.default === 'function') {

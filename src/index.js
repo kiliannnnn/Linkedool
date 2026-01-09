@@ -4,13 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { Command } from 'commander';
 import inquirer from 'inquirer';
-const {
-  loadPdfTextFromFile,
-  extractTextFromHtml,
-  fetchHtmlFromUrl,
-  buildPrompt,
-  callOllama,
-} = require('./analyzer');
+import { loadPdfTextFromFile, extractTextFromHtml, fetchHtmlFromUrl, buildPrompt, callOllama } from './analyzer.js';
 
 function logInfo(message) {
   console.log(`\n[linkedool] ${message}`);
