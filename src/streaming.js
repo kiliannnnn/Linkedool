@@ -1,6 +1,6 @@
 // Streaming analyzer functions for real-time output
 
-async function* streamOllama(model, prompt, host = 'http://localhost:11434') {
+export async function* streamOllama(model, prompt, host = 'http://localhost:11434') {
   const target = host;
   const res = await fetch(`${target}/api/generate`, {
     method: 'POST',
@@ -40,7 +40,7 @@ async function* streamOllama(model, prompt, host = 'http://localhost:11434') {
   }
 }
 
-async function* streamOpenAI(model, prompt, apiKey) {
+export async function* streamOpenAI(model, prompt, apiKey) {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -90,5 +90,3 @@ async function* streamOpenAI(model, prompt, apiKey) {
     reader.releaseLock();
   }
 }
-
-module.exports = { streamOllama, streamOpenAI };

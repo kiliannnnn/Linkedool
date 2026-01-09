@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { JSDOM } from 'jsdom';
-import mod from 'pdf-parse';
+import * as mod from 'pdf-parse';
 
 // Robust pdf-parse resolver across versions:
 // - v1 style: default export is a function (buffer) -> { text }
@@ -23,14 +23,14 @@ try {
   pdfParseFn = null;
 }
 
-const DEFAULT_OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
+export const DEFAULT_OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
 
-async function loadPdfTextFromFile(filePath) {
+export async function loadPdfTextFromFile(filePath) {
   const dataBuffer = await fs.readFile(path.resolve(filePath));
   return loadPdfTextFromBuffer(dataBuffer);
 }
 
-async function loadPdfTextFromBuffer(buffer) {
+export async function loadPdfTextFromBuffer(buffer) {
   if (typeof pdfParseFn !== 'function') {
     throw new Error('pdf-parse import failed: no usable parser function');
   }
@@ -38,7 +38,7 @@ async function loadPdfTextFromBuffer(buffer) {
   return text || '';
 }
 
-function extractTextFromHtml(html) {
+export function extractTextFromHtml(html) {
   const dom = new JSDOM(html);
   const text = dom.window.document.body.textContent || '';
   return text.replace(/\s+/g, ' ').trim();
@@ -58,7 +58,7 @@ function truncateForPrompt(text, max = 6000) {
   return text.slice(0, max) + '\n... [truncated]\n';
 }
 
-function buildPrompt({ profileText, model }) {
+export function buildPrompt({ profileText, model }) {
   const profileBlock = truncateForPrompt(profileText);
 
   return [
@@ -96,7 +96,7 @@ function buildPrompt({ profileText, model }) {
   ].join('\n');
 }
 
-async function callOllama(model, prompt, host = DEFAULT_OLLAMA_HOST) {
+export async function callOllama(model, prompt, host = DEFAULT_OLLAMA_HOST) {
   const target = host || DEFAULT_OLLAMA_HOST;
   const res = await fetch(`${target}/api/generate`, {
     method: 'POST',
@@ -113,7 +113,7 @@ async function callOllama(model, prompt, host = DEFAULT_OLLAMA_HOST) {
   return json.response;
 }
 
-async function callOpenAI(model, prompt, apiKey) {
+export async function callOpenAI(model, prompt, apiKey) {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -136,7 +136,7 @@ async function callOpenAI(model, prompt, apiKey) {
   return json.choices[0]?.message?.content || '';
 }
 
-async function fetchModels(host = DEFAULT_OLLAMA_HOST) {
+export async function fetchModels(host = DEFAULT_OLLAMA_HOST) {
   const target = host || DEFAULT_OLLAMA_HOST;
   const res = await fetch(`${target}/api/tags`);
   if (!res.ok) {
@@ -146,16 +146,3 @@ async function fetchModels(host = DEFAULT_OLLAMA_HOST) {
   const json = await res.json();
   return json.models || [];
 }
-
-module.exports = {
-  DEFAULT_OLLAMA_HOST,
-  loadPdfTextFromFile,
-  loadPdfTextFromBuffer,
-  extractTextFromHtml,
-  fetchHtmlFromUrl,
-  truncateForPrompt,
-  buildPrompt,
-  callOllama,
-  callOpenAI,
-  fetchModels,
-};
