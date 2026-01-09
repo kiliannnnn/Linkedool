@@ -1,6 +1,6 @@
-const fs = require('fs/promises');
-const path = require('path');
-const { JSDOM } = require('jsdom');
+import fs from 'fs/promises';
+import path from 'path';
+import { JSDOM } from 'jsdom';
 
 // Robust pdf-parse resolver across versions:
 // - v1 style: default export is a function (buffer) -> { text }

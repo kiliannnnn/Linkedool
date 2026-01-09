@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const fs = require('fs/promises');
-const path = require('path');
-const { Command } = require('commander');
-const inquirer = require('inquirer');
+import fs from 'fs/promises';
+import path from 'path';
+import { Command } from 'commander';
+import inquirer from 'inquirer';
 const {
   loadPdfTextFromFile,
   extractTextFromHtml,

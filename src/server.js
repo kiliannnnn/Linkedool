@@ -1,8 +1,9 @@
-const express = require('express');
-const cors = require('cors');
-const multer = require('multer');
-const path = require('path');
-const {
+import express from 'express';
+import cors from 'cors';
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import {
   loadPdfTextFromBuffer,
   extractTextFromHtml,
   buildPrompt,
@@ -10,8 +11,10 @@ const {
   callOpenAI,
   fetchModels,
   DEFAULT_OLLAMA_HOST,
-} = require('./analyzer');
-const { streamOllama, streamOpenAI } = require('./streaming');
+} from './analyzer.js';
+import { streamOllama, streamOpenAI } from './streaming.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const app = express();
